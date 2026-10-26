@@ -1,0 +1,38 @@
+{
+  "name": "ADHDiva",
+  "short_name": "ADHDiva",
+  "description": "ADHD-friendly app for working moms and wives: overwhelm check-ins, come-home transition ritual, fair-share household board, scripts for feelings, needs and asking for help, easy home workouts. Data stays on your phone.",
+  "id": "/adhdiva/",
+  "start_url": "/adhdiva/",
+  "scope": "/adhdiva/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f7f5f6",
+  "theme_color": "#f7f5f6",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

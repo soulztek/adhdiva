@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#f7f5f6" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="ADHDiva" />
+<meta name="description" content="ADHDiva: an ADHD-friendly app for working moms and wives. Overwhelm check-ins, come-home transition, fair-share household board, scripts for asking for help, easy home workouts." />
+<link rel="manifest" href="./manifest.json" />
+<link rel="icon" type="image/png" sizes="48x48" href="./icons/favicon-48.png" />
+<link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png" />
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+<title>ADHDiva</title>
+<style>
+  :root{--bg:#f7f5f6;--elev:#ffffff;--card:#ffffff;--fill2:#f2edf0;--border:#ede7ea;--border-strong:#d9d0d5;--focus:#9b3d6e;--primary:#9b3d6e;--accent:#9b3d6e;--on-accent:#ffffff;--ink:#161214;--on-ink:#ffffff;--blue:#9b3d6e;--accent-subtle:#f7e9f0;--text:#161214;--text2:#665d62;--text3:#a1979c;--link:#7f2c58;--zebra:transparent;--shadow:0 1px 2px rgba(40,18,30,0.03),0 6px 20px rgba(40,18,30,0.05);--glass:rgba(255,255,255,0.9);--nav:#161214;--warn-bg:#fbf5e6;--info-bg:#f2edf0;color-scheme:light}
+  :root[data-theme=dark]{--bg:#110e10;--elev:#1c181a;--card:#1c181a;--fill2:#282326;--border:#2c2629;--border-strong:#423b3f;--focus:#e48bb4;--primary:#e48bb4;--accent:#e48bb4;--on-accent:#110e10;--ink:#f5f1f3;--on-ink:#161214;--blue:#e48bb4;--accent-subtle:rgba(228,139,180,0.15);--text:#f5f1f3;--text2:#aea3a9;--text3:#776d72;--link:#f2afce;--zebra:transparent;--shadow:0 1px 2px rgba(0,0,0,0.3);--glass:rgba(24,27,26,0.85);--nav:#050405;--warn-bg:rgba(245,184,0,0.10);--info-bg:#282326;color-scheme:dark}
+  main *,section *{min-width:0} html,body{overflow-x:hidden;margin:0;background:var(--bg);color:var(--text);-webkit-text-size-adjust:100%;font-family:Inter,-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;font-size:15px;line-height:1.45}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  button,input,select{font:inherit;}
+  button{transition:background-color .2s ease,color .2s ease,opacity .2s ease,transform .15s ease,box-shadow .2s ease}
+  button:active:not(:disabled){transform:scale(0.985)}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  input:focus,select:focus{outline:2px solid var(--accent);outline-offset:0}
+  input::placeholder{color:var(--text3)}
+  table{border-collapse:collapse;width:100%;}
+  ::-webkit-scrollbar{height:4px;width:4px}
+  .hscroll{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding:2px 2px 8px;scrollbar-width:none}
+  .hscroll::-webkit-scrollbar,.noscroll::-webkit-scrollbar{display:none}
+  .noscroll{scrollbar-width:none}
+  .hscroll>*{scroll-snap-align:start}
+  .clamp3{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .noscrollbar{scrollbar-width:none}.noscrollbar::-webkit-scrollbar{display:none}
+  .fadein{animation:fadein .28s ease both}
+  @keyframes fadein{from{opacity:0}to{opacity:1}}
+  @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<script>try{var u=JSON.parse(localStorage.getItem("adhdiva-ui")||"{}");if(u.dark)document.documentElement.setAttribute("data-theme","dark")}catch(e){}</script>
+<div id="root"></div>
+<script type="module" src="/src/main.tsx"></script>
+</body>
+</html>
