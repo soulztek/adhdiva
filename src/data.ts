@@ -36,6 +36,8 @@ export interface Ui {
   name?: string; partner?: string; kids: string[]; dark?: boolean; workoutDays: number[]; workoutTime: string; homeTime: string; dinnerTime: string;
   landMins: number; kindSeen?: string; kidHelper?: boolean; breath?: "sigh" | "box" | "478"; affOff?: number;
   cycle?: boolean; cycleStart?: string; cycleLen: number;
+  /** Daily Readings card on Home + optional row on Today. undefined = on. */
+  readings?: boolean;
 }
 
 export const STORE_KEY = "adhdiva-v1";

@@ -3,7 +3,7 @@ const dist = path.resolve("dist");
 const files = [];
 (function walk(d){ for (const f of fs.readdirSync(d)) { const p = path.join(d,f); if (fs.statSync(p).isDirectory()) walk(p); else files.push("./" + path.relative(dist,p).split(path.sep).join("/")); } })(dist);
 const list = files.filter(f => f !== "./sw.js");
-const APP_VERSION = "v1";
+const APP_VERSION = "v2";
 const version = "adhdiva-" + APP_VERSION + "-" + Date.now();
 const sw = `// ADHDiva service worker. Only ever touches caches named adhdiva-* so it never clears another app on the same origin.
 const CACHE = ${JSON.stringify(version)};
@@ -13,6 +13,11 @@ self.addEventListener("activate", (e) => { e.waitUntil(caches.keys().then((ks) =
 self.addEventListener("fetch", (e) => {
   const req = e.request;
   if (req.method !== "GET" || new URL(req.url).origin !== self.location.origin) return;
+  if (new URL(req.url).pathname.endsWith("/readings.json")) {
+    // Daily data (day titles + citations only): network first so it's fresh, cached copy when offline.
+    e.respondWith(fetch(req).then((r) => { if (r.ok) { const cp = r.clone(); caches.open(CACHE).then((c) => c.put(req, cp)); } return r; }).catch(() => caches.match(req, { ignoreSearch: true })));
+    return;
+  }
   if (req.mode === "navigate") {
     e.respondWith(fetch(req).then((r) => { const cp = r.clone(); caches.open(CACHE).then((c) => c.put("./", cp)); return r; }).catch(() => caches.match("./").then((r) => r || caches.match("./index.html"))));
     return;

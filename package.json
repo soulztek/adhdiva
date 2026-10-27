@@ -4,9 +4,9 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "build": "vite build && node scripts/gen-sw.mjs",
+    "build": "vite build && node scripts/fetch-readings.mjs && node scripts/gen-sw.mjs",
     "preview": "vite preview --port 4174",
-    "test": "esbuild tests/streak.test.ts --bundle --platform=node --outfile=node_modules/.cache/streak.test.cjs --log-level=warning && node node_modules/.cache/streak.test.cjs"
+    "test": "esbuild tests/streak.test.ts --bundle --platform=node --outfile=node_modules/.cache/streak.test.cjs --log-level=warning && node node_modules/.cache/streak.test.cjs && esbuild tests/readings.test.ts --bundle --platform=node --outfile=node_modules/.cache/readings.test.cjs --log-level=warning && node node_modules/.cache/readings.test.cjs"
   },
   "dependencies": {
     "react": "^18.3.1",

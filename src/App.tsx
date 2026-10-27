@@ -6,6 +6,7 @@ import { DemoBlock, demoThumb } from "./Demo";
 import { FEDB_USED } from "./demos.generated";
 import { streakInfo, isoDay, plusDays, weekKey, levelOf, LEVELS, XP, CAP, rollReward, BADGES, MICRO_JOYS, IF_THEN_DEFAULT, AFFIRMATIONS_ME, AFFIRMATIONS_KIDS, QUESTIONS, GRATITUDE_PROMPTS, TRIGGERS, bossOf, rotate, dayIndex, patternNotes, burnoutRisk, cycleDay, cyclePhase, PHASE_LABEL, PHASE_NOTE, lutealPattern, softStartup, fairShare } from "./adhd";
 import { Store, Ui, DayRec, Chore, Reminder, STORE_KEY, UI_KEY, DEFAULT_UI, DEFAULT_CHORES, DEFAULT_REMINDERS, DEFAULT_AGREEMENTS, REM_MIN, TODAY_ITEMS, MINABLE, CONNECT_MOMENTS, LANDING_STEPS, LANDING_SCRIPT, FEELINGS, NEEDS, HELP_SCRIPTS, BOUNDARY_SCRIPTS, AGENDA, EXERCISES, SNACK_MOVES, GENTLE_MOVES, WORKOUTS, FULL, MINV, DAY_SHORT, DAY_LONG, WEEK_ORDER, FALLBACK_TINY, GROUNDING, SENSORY_RESETS, SELF_COMPASSION, KIND_PROMPTS, WHY_SOURCES } from "./data";
+import { loadReadings, usccbUrl, audioUrl, mainRefs, shortLabel, VIDEO_INDEX, READ_KEY } from "./readings";
 import { Ring, ModeSwitch, PillButton, TapItem, CapNote, NextChip, SessionTimer, TimerSheet, Toast, Rating, TrendChart, Breather, ModeChip, DayPicker, fieldStyle, hm, fmtHour } from "./ui";
 
 // ---------- storage ----------
@@ -208,6 +209,9 @@ export default function App() {
   const [askTo, setAskTo] = useState<string>("Partner");
   const [b, setB] = useState<{ feel: string[]; about: string; need: string; ask: string; appreciate: string }>({ feel: ["overwhelmed"], about: "", need: "", ask: "", appreciate: "" });
   const [draft, setDraft] = useState<string | null>(null);
+  const [rdData, setRdData] = useState<any>(null);
+  const [rdOff, setRdOff] = useState<number>(0);
+  const [rdFrom, setRdFrom] = useState<string>("more");
   const todayIso = isoDay(now);
   const rec: DayRec = store.days[todayIso] || EMPTY_DAY;
 
@@ -220,6 +224,7 @@ export default function App() {
   useEffect(() => { try { window.localStorage.setItem(STORE_KEY, JSON.stringify(store)); setSaved(true); } catch (_e) { setSaved(false); } }, [store]);
   useEffect(() => { try { window.localStorage.setItem(UI_KEY, JSON.stringify(ui)); } catch (_e) {} document.documentElement.setAttribute("data-theme", ui.dark ? "dark" : "light"); const m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute("content", ui.dark ? "#110e10" : "#f7f5f6"); }, [ui]);
   useEffect(() => { window.scrollTo(0, 0); }, [nav, page, moveDetail, hlTab, mindTab, talkTab]);
+  useEffect(() => { let live = true; loadReadings().then((d) => { if (live) setRdData(d); }); return () => { live = false; }; }, []);
   useEffect(() => { if (!store.startDate) setStore((s) => ({ ...s, startDate: todayIso })); }, []);
 
   const xp = computeXp(store);
@@ -460,6 +465,86 @@ export default function App() {
     if (on) reward(10);
   }
 
+  // ---------- Daily Readings (USCCB: day + citations only, text opens on bible.usccb.org) ----------
+  const readingsOn = ui.readings !== false;
+  const todayDate = new Date(todayIso + "T00:00:00");
+  const rdDay = (d: Date) => (rdData && rdData.days ? rdData.days[isoDay(d)] : null) || null;
+  const todayRd = rdDay(todayDate);
+  const readDone = !!rec.c[READ_KEY];
+  const markRead = () => toggle(READ_KEY, XP.item);
+  const openReadings = (from: string) => { setRdOff(0); setRdFrom(from); setPage("readings"); };
+  const extLink = (href: string, label: string, icon: string, primary?: boolean, aria?: string) => (
+    <a href={href} target="_blank" rel="noopener noreferrer" aria-label={aria} style={{ minHeight: primary ? 48 : 38, padding: primary ? "0 20px" : "0 14px", borderRadius: 999, background: primary ? "var(--ink)" : "var(--fill2)", color: primary ? "var(--on-ink)" : "var(--text)", fontSize: primary ? 15 : 13.5, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, textDecoration: "none", whiteSpace: "nowrap", flex: primary ? "1 1 100%" : "1 1 0" }}>{I(icon, primary ? 16 : 14, 2)}{label}</a>
+  );
+  const readTick = (
+    <button onClick={markRead} aria-pressed={readDone} style={{ height: 38, padding: "0 14px", borderRadius: 999, border: "none", background: readDone ? "var(--accent)" : "var(--accent-subtle)", color: readDone ? "#fff" : "var(--link)", fontSize: 13.5, fontWeight: 600, cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, whiteSpace: "nowrap", flex: "1 1 0" }}>{I("check", 14, 2.5)}{readDone ? "Read" : `Read · +${XP.item} XP`}</button>
+  );
+  const rdAttrib = <div style={{ fontSize: 11.5, color: "var(--text3)", textAlign: "center" }}>Readings from the USCCB · <a href="https://bible.usccb.org/" target="_blank" rel="noopener noreferrer" style={{ color: "var(--text3)" }}>bible.usccb.org</a></div>;
+  const refLines = (refs: any[], compact?: boolean) => (
+    <div style={{ display: "grid", gap: compact ? 4 : 0 }}>
+      {refs.map((r, i) => (
+        <div key={i} style={{ display: "flex", gap: 10, alignItems: "baseline", fontSize: compact ? 13.5 : 15, lineHeight: compact ? "19px" : "21px", padding: compact ? 0 : "10px 0", borderTop: compact || i === 0 ? "none" : "1px solid var(--border)" }}>
+          <span style={{ width: compact ? 78 : 112, flex: "0 0 auto", color: "var(--text3)", fontSize: compact ? 12.5 : 13 }}>{compact ? shortLabel(r.label) : r.label}</span>
+          <span style={{ fontWeight: 600, minWidth: 0 }}>{r.cite}</span>
+        </div>
+      ))}
+    </div>
+  );
+  const readingsCard = (
+    <div style={{ ...CARD, padding: 16, display: "grid", gap: 12 }}>
+      <button onClick={() => openReadings("home")} aria-label="Open Daily Readings" style={{ display: "flex", alignItems: "center", gap: 12, border: "none", background: "transparent", padding: 0, textAlign: "left", color: "var(--text)", cursor: "pointer" }}>
+        <IconDot name="book" tone="accent" size={40} />
+        <div style={{ flex: 1, minWidth: 0, display: "grid", gap: 2 }}>
+          <div style={{ fontSize: 11.5, fontWeight: 600, color: "var(--link)", letterSpacing: 0.5 }}>{`DAILY READINGS · ${DAY_SHORT[todayDate.getDay()].toUpperCase()} ${shortDate(todayDate)}`}</div>
+          <div style={{ fontSize: 15.5, fontWeight: 600, lineHeight: "20px" }}>{todayRd ? todayRd.title : "Today's Mass readings"}</div>
+        </div>
+        <span style={{ color: "var(--text3)" }}>{I("chev", 18, 2)}</span>
+      </button>
+      {todayRd && mainRefs(todayRd).length > 0 && refLines(mainRefs(todayRd), true)}
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        {extLink(usccbUrl(todayDate), "Read today's readings", "external", true)}
+        {readTick}
+        {extLink((todayRd && todayRd.audio) || audioUrl(todayDate), "Listen", "headphones", false, "Listen to today's readings on USCCB")}
+      </div>
+      {rdAttrib}
+    </div>
+  );
+  const rdDate = plusDays(todayDate, rdOff);
+  const rdCur = rdDay(rdDate);
+  const rdIsToday = rdOff === 0;
+  const arrowBtn = (dir: number) => <button onClick={() => setRdOff(rdOff + dir)} aria-label={dir < 0 ? "Previous day" : "Next day"} style={{ width: 44, height: 44, borderRadius: 22, border: "none", background: "var(--fill2)", color: "var(--text)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flex: "0 0 auto" }}>{I(dir < 0 ? "back" : "chev", 20, 2)}</button>;
+  const readingsView = (
+    <Fragment>
+      <div style={{ ...CARD, padding: 10, display: "flex", alignItems: "center", gap: 8 }}>
+        {arrowBtn(-1)}
+        <div style={{ flex: 1, textAlign: "center", display: "grid", gap: 1 }}>
+          <div style={{ fontSize: 16, fontWeight: 600 }}>{`${DAY_LONG[rdDate.getDay()]}, ${rdDate.toLocaleDateString("en-US", { month: "long", day: "numeric" })}`}</div>
+          <div style={{ fontSize: 12, color: "var(--text3)" }}>{rdIsToday ? "Today" : <button onClick={() => setRdOff(0)} style={{ border: "none", background: "transparent", padding: 0, color: "var(--link)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Back to today</button>}</div>
+        </div>
+        {arrowBtn(1)}
+      </div>
+      <div style={{ ...CARD, padding: 18, display: "grid", gap: 14, background: "linear-gradient(135deg, var(--accent-subtle), var(--card) 70%)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11.5, fontWeight: 600, color: "var(--link)", letterSpacing: 0.5 }}>{I("book", 14)}{rdDate.getFullYear() === todayDate.getFullYear() ? "LITURGY OF THE WORD" : `LITURGY OF THE WORD · ${rdDate.getFullYear()}`}</div>
+        <div style={{ fontSize: 21, fontWeight: 700, lineHeight: "27px", letterSpacing: -0.3 }}>{rdCur ? rdCur.title : "Mass readings for this day"}</div>
+        {rdCur && rdCur.readings && rdCur.readings.length > 0 ? refLines(rdCur.readings) : <div style={{ fontSize: 13.5, lineHeight: "19px", color: "var(--text2)" }}>{rdData ? "The day's title and citations aren't in the app for this date yet. The button below opens the readings on USCCB." : "Offline or couldn't load the day's citations. The button below still opens the readings on USCCB."}</div>}
+        {rdCur && rdCur.masses && rdCur.masses.length > 0 && (
+          <div style={{ display: "grid", gap: 6 }}>
+            <Label>More than one set of readings today</Label>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{rdCur.masses.map((m: any) => <a key={m.url} href={m.url} target="_blank" rel="noopener noreferrer" style={{ padding: "7px 12px", borderRadius: 999, background: "var(--fill2)", color: "var(--text)", fontSize: 12.5, fontWeight: 600, textDecoration: "none" }}>{m.label}</a>)}</div>
+          </div>
+        )}
+        {extLink(usccbUrl(rdDate), rdIsToday ? "Read today's readings" : "Read this day's readings", "external", true)}
+        <div style={{ display: "flex", gap: 8 }}>
+          {extLink((rdCur && rdCur.audio) || audioUrl(rdDate), "Listen", "headphones", false, "Listen to the readings on USCCB")}
+          {extLink((rdCur && rdCur.video) || VIDEO_INDEX, rdCur && rdCur.video ? "Reflection video" : "Reflection videos", "video", false, "Watch the USCCB reflection video")}
+        </div>
+      </div>
+      {rdIsToday && (readDone ? <CapNote title={`Read · +${XP.item} XP`} text="A few quiet minutes with the Word. That counts." /> : <PillButton full soft icon="check" label={`I read them (+${XP.item} XP)`} onClick={markRead} />)}
+      <div style={{ fontSize: 12.5, lineHeight: "18px", color: "var(--text3)", padding: "0 4px" }}>ADHDiva shows the day and the citations only. The readings, audio and reflections open on the USCCB's site. Ticking "read" is optional and never hurts your streak.</div>
+      {rdAttrib}
+    </Fragment>
+  );
+
   // ---------- Home ----------
   const greet = hourNow < 12 ? "Good morning" : hourNow < 17 ? "Good afternoon" : "Good evening";
   const affN = AFFIRMATIONS_ME.length;
@@ -489,6 +574,7 @@ export default function App() {
         <div style={{ fontSize: 19, fontWeight: 600, lineHeight: "26px", letterSpacing: -0.2 }}>{affirmation}</div>
         <div><PillButton small soft label="Another one" onClick={() => setUi({ ...ui, affOff: (ui.affOff || 0) + 1 })} /></div>
       </div>
+      {readingsOn && readingsCard}
       <div style={{ ...CARD, padding: 16, display: "grid", gap: 12 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
           <span style={{ fontSize: 15.5, fontWeight: 600 }}>Overwhelm right now?</span>
@@ -558,6 +644,11 @@ export default function App() {
             action={it.key === moveKey ? { label: "Open", onClick: goMove } : it.key === "land" ? { label: "Ritual", onClick: goLand } : it.key === "x:ask" ? { label: "Scripts", onClick: goAsk } : it.key === "x:me" ? { label: "Timer", onClick: () => setSheet({ kind: "me" }) } : undefined} />
         ))}
       </div>
+      {readingsOn && (
+        <div style={{ ...CARD, padding: "6px 16px" }}>
+          <TapItem first label="Daily readings" sub={`Optional · ${todayRd ? todayRd.title : "USCCB"} · never hurts your streak`} done={readDone} onTap={markRead} action={{ label: "Open", icon: "book", onClick: () => openReadings("today") }} />
+        </div>
+      )}
       {todayDone === todayRows.length && <CapNote title="All done. Stop here." text="That's the whole list. The rest of today is yours." />}
       <Section heading="My home cards today" caption={`${myDue.filter((c) => rec.c[`chore:${c.id}`]).length} of ${myDue.length} done · yours + shared · edit in Home Life`}>
         <div style={{ display: "grid", marginTop: -6, marginBottom: -6 }}>
@@ -1076,13 +1167,14 @@ export default function App() {
   const owned = new Set(store.badges.map((x) => x.id));
   const advs = Array.from(new Set(store.rewards.filter((r) => r.kind === "adventure").map((r) => r.body)));
   const joys = Array.from(new Set(store.rewards.filter((r) => r.kind === "joy" || r.kind === "treat").map((r) => r.body)));
-  const moreTitles: Record<string, string> = { more: "More", settings: "Settings", badges: "Badge shelf", backup: "Backup", why: "Why it works", credits: "Credits" };
+  const moreTitles: Record<string, string> = { readings: "Daily Readings", more: "More", settings: "Settings", badges: "Badge shelf", backup: "Backup", why: "Why it works", credits: "Credits" };
   const fieldLabel = (t: string) => <span style={{ fontSize: 13, color: "var(--text3)" }}>{t}</span>;
   const para = (children: any) => <div style={{ fontSize: 14, lineHeight: "20px", color: "var(--text2)" }}>{children}</div>;
   const timeField = (label: string, k: string) => <label style={{ display: "grid", gap: 6 }}>{fieldLabel(label)}<input type="time" value={ui[k]} onChange={(e) => setUi({ ...ui, [k]: e.target.value || ui[k] })} style={fieldStyle} /></label>;
   const moreMenu = (
     <div style={{ display: "grid", gap: 10 }}>
       <MenuRow icon="settings" title="Settings" sub="Names, partner, kids, home time, cycle, dark mode" onClick={() => setPage("settings")} />
+      <MenuRow icon="book" title="Daily Readings" sub="Today's Mass readings from the USCCB" onClick={() => openReadings("more")} />
       <MenuRow icon="award" title="Badge shelf" sub={`${owned.size} of ${BADGES.length} badges · ${advs.length} adventures`} onClick={() => setPage("badges")} />
       <MenuRow icon="download" title="Backup" sub="Export or import your data" onClick={() => setPage("backup")} />
       <MenuRow icon="bulb" title="Why it works" sub="The research, in plain language" onClick={() => setPage("why")} />
@@ -1120,6 +1212,9 @@ export default function App() {
           <label style={{ display: "grid", gap: 6 }}>{fieldLabel("Last period started")}<input type="date" value={ui.cycleStart || ""} max={todayIso} onChange={(e) => setUi({ ...ui, cycleStart: e.target.value || undefined })} style={fieldStyle} /></label>
           <label style={{ display: "grid", gap: 6 }}>{fieldLabel("Typical length (days)")}<input value={String(ui.cycleLen || 28)} inputMode="numeric" onChange={(e) => { const n = parseInt(e.target.value.replace(/\D/g, ""), 10); setUi({ ...ui, cycleLen: isNaN(n) ? 28 : Math.max(20, Math.min(45, n)) }); }} style={fieldStyle} /></label>
         </div>}
+      </Section>
+      <Section heading="Daily Readings" caption="Mass readings from the USCCB on Home, plus an optional tick on Today">
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}><span style={{ fontSize: 15 }}>Show daily readings</span><ModeChip on={readingsOn} label={readingsOn ? "On" : "Off"} onClick={() => setUi({ ...ui, readings: !readingsOn })} /></div>
       </Section>
       <Section heading="Look">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}><span style={{ fontSize: 15 }}>Dark mode</span><ModeChip on={!!ui.dark} label={ui.dark ? "On" : "Off"} onClick={() => setUi({ ...ui, dark: !ui.dark })} /></div>
@@ -1186,8 +1281,9 @@ export default function App() {
   );
   const moreScreen = page ? (
     <Fragment>
-      <ScreenTitle title={moreTitles[page]} sub={page === "more" ? `${lvl.cur.name} · ${xp} XP` : undefined} onBack={() => setPage(page === "more" ? null : "more")} />
+      <ScreenTitle title={moreTitles[page]} sub={page === "more" ? `${lvl.cur.name} · ${xp} XP` : page === "readings" ? "Catholic Mass readings · USCCB" : undefined} onBack={() => { if (page === "readings" && rdFrom !== "more") { setPage(null); if (rdFrom === "today") setNav("today"); } else setPage(page === "more" ? null : "more"); }} />
       {page === "more" && moreMenu}
+      {page === "readings" && readingsView}
       {page === "settings" && settingsView}
       {page === "badges" && badgesView}
       {page === "backup" && <Section heading="Backup" caption="Everything lives on this phone only (no account, no server). Export now and then; import to restore or move to a new phone."><BackupBox store={store} ui={ui} onImport={(s, u) => { setStore(s); if (u) setUi(normUi(u)); }} /></Section>}

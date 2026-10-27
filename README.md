@@ -10,3 +10,15 @@ Live: https://soulztek.github.io/adhdiva/
 - Data stays on the device in localStorage (`adhdiva-v1` and `adhdiva-ui`). No backend, no tracking. Use More → Backup to export/import.
 - Not medical advice. In the US, call or text 988 if you're struggling; the National Maternal Mental Health Hotline is 1-833-852-6262.
 - Exercise demos: [free-exercise-db](https://github.com/yuhonas/free-exercise-db) (Unlicense). Icons: `scripts/gen-icons.py`.
+
+## Daily Readings (USCCB)
+
+Home shows a Daily Readings card (More › Daily Readings has prev/next day). The app shows only the date, the
+liturgical day and the reading citations, and links to `https://bible.usccb.org/bible/readings/MMDDYY.cfm` to read
+(plus USCCB's audio and reflection-video pages). No reading text is stored or shown: the NABRE is copyrighted by the CCD.
+
+USCCB's RSS feed (`bible.usccb.org/readings.rss`) sends no CORS headers, so the browser can't read it. Instead
+`scripts/fetch-readings.mjs` runs during `npm run build` and writes `dist/readings.json` (titles + citations only,
+from the RSS feed and the dated pages for about -7..+14 days). The Pages workflow also runs daily on a cron so the
+file stays current. The service worker serves `readings.json` network-first with an offline copy. If it's missing,
+the card still shows the dated USCCB link. A "Read" tick is optional (`x:read`, +10 XP) and never hurts the streak.

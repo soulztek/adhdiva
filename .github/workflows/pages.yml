@@ -3,6 +3,9 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  schedule:
+    # Daily rebuild so readings.json (day titles + citations only) stays current. 09:20 UTC = 5:20 AM ET (EDT).
+    - cron: "20 9 * * *"
 permissions:
   contents: read
   pages: write
