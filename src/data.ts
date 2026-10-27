@@ -38,6 +38,10 @@ export interface Ui {
   cycle?: boolean; cycleStart?: string; cycleLen: number;
   /** Daily Readings card on Home + optional row on Today. undefined = on. */
   readings?: boolean;
+  /** Daily inspiration opening page: last day it was shown (YYYY-MM-DD). */
+  inspireSeen?: string;
+  /** App background: none | mary | psalm | lady. undefined = mary. */
+  bg?: string;
 }
 
 export const STORE_KEY = "adhdiva-v1";

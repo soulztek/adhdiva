@@ -6,6 +6,7 @@ import { DemoBlock, demoThumb } from "./Demo";
 import { FEDB_USED } from "./demos.generated";
 import { streakInfo, isoDay, plusDays, weekKey, levelOf, LEVELS, XP, CAP, rollReward, BADGES, MICRO_JOYS, IF_THEN_DEFAULT, AFFIRMATIONS_ME, AFFIRMATIONS_KIDS, QUESTIONS, GRATITUDE_PROMPTS, TRIGGERS, bossOf, rotate, dayIndex, patternNotes, burnoutRisk, cycleDay, cyclePhase, PHASE_LABEL, PHASE_NOTE, lutealPattern, softStartup, fairShare } from "./adhd";
 import { Store, Ui, DayRec, Chore, Reminder, STORE_KEY, UI_KEY, DEFAULT_UI, DEFAULT_CHORES, DEFAULT_REMINDERS, DEFAULT_AGREEMENTS, REM_MIN, TODAY_ITEMS, MINABLE, CONNECT_MOMENTS, LANDING_STEPS, LANDING_SCRIPT, FEELINGS, NEEDS, HELP_SCRIPTS, BOUNDARY_SCRIPTS, AGENDA, EXERCISES, SNACK_MOVES, GENTLE_MOVES, WORKOUTS, FULL, MINV, DAY_SHORT, DAY_LONG, WEEK_ORDER, FALLBACK_TINY, GROUNDING, SENSORY_RESETS, SELF_COMPASSION, KIND_PROMPTS, WHY_SOURCES } from "./data";
+import { InspirePage, InspireCard, Backdrop, INSPIRE, BG_DEFAULT } from "./Inspire";
 import { loadReadings, usccbUrl, audioUrl, mainRefs, shortLabel, VIDEO_INDEX, READ_KEY } from "./readings";
 import { Ring, ModeSwitch, PillButton, TapItem, CapNote, NextChip, SessionTimer, TimerSheet, Toast, Rating, TrendChart, Breather, ModeChip, DayPicker, fieldStyle, hm, fmtHour } from "./ui";
 
@@ -209,6 +210,7 @@ export default function App() {
   const [askTo, setAskTo] = useState<string>("Partner");
   const [b, setB] = useState<{ feel: string[]; about: string; need: string; ask: string; appreciate: string }>({ feel: ["overwhelmed"], about: "", need: "", ask: "", appreciate: "" });
   const [draft, setDraft] = useState<string | null>(null);
+  const [inspire, setInspire] = useState<"open" | "view" | null>(() => (loadUi().inspireSeen === isoDay(new Date()) ? null : "open"));
   const [rdData, setRdData] = useState<any>(null);
   const [rdOff, setRdOff] = useState<number>(0);
   const [rdFrom, setRdFrom] = useState<string>("more");
@@ -574,6 +576,7 @@ export default function App() {
         <div style={{ fontSize: 19, fontWeight: 600, lineHeight: "26px", letterSpacing: -0.2 }}>{affirmation}</div>
         <div><PillButton small soft label="Another one" onClick={() => setUi({ ...ui, affOff: (ui.affOff || 0) + 1 })} /></div>
       </div>
+      <InspireCard onOpen={() => setInspire("view")} />
       {readingsOn && readingsCard}
       <div style={{ ...CARD, padding: 16, display: "grid", gap: 12 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
@@ -1174,6 +1177,7 @@ export default function App() {
   const moreMenu = (
     <div style={{ display: "grid", gap: 10 }}>
       <MenuRow icon="settings" title="Settings" sub="Names, partner, kids, home time, cycle, dark mode" onClick={() => setPage("settings")} />
+      <MenuRow icon="spark" title="Daily inspiration" sub="Holy Mary, Psalm 111:1, Our Lady" onClick={() => setInspire("view")} />
       <MenuRow icon="book" title="Daily Readings" sub="Today's Mass readings from the USCCB" onClick={() => openReadings("more")} />
       <MenuRow icon="award" title="Badge shelf" sub={`${owned.size} of ${BADGES.length} badges · ${advs.length} adventures`} onClick={() => setPage("badges")} />
       <MenuRow icon="download" title="Backup" sub="Export or import your data" onClick={() => setPage("backup")} />
@@ -1215,6 +1219,16 @@ export default function App() {
       </Section>
       <Section heading="Daily Readings" caption="Mass readings from the USCCB on Home, plus an optional tick on Today">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}><span style={{ fontSize: 15 }}>Show daily readings</span><ModeChip on={readingsOn} label={readingsOn ? "On" : "Off"} onClick={() => setUi({ ...ui, readings: !readingsOn })} /></div>
+      </Section>
+      <Section heading="Background" caption="A soft, faded image behind the app. Cards stay clear and readable.">
+        <div role="radiogroup" aria-label="Background" style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0,1fr))", gap: 8 }}>
+          {[{ id: "none", name: "None", src: "", bg: "var(--fill2)" }, ...INSPIRE].map((o: any) => { const on = (ui.bg || BG_DEFAULT) === o.id; return (
+            <button key={o.id} role="radio" aria-checked={on} aria-label={`Background: ${o.name}`} onClick={() => setUi({ ...ui, bg: o.id })} style={{ border: "none", background: "transparent", padding: 0, cursor: "pointer", display: "grid", gap: 6, justifyItems: "center", color: "var(--text)" }}>
+              <span style={{ width: "100%", aspectRatio: "9 / 16", borderRadius: 14, background: o.bg, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: on ? "0 0 0 2.5px var(--accent)" : "inset 0 0 0 1px var(--border)", color: "var(--text3)" }}>{o.src ? <img src={o.src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : I("x", 18)}</span>
+              <span style={{ fontSize: 12, fontWeight: on ? 600 : 400, color: on ? "var(--text)" : "var(--text2)", textAlign: "center", lineHeight: "15px" }}>{o.name}</span>
+            </button>
+          ); })}
+        </div>
       </Section>
       <Section heading="Look">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}><span style={{ fontSize: 15 }}>Dark mode</span><ModeChip on={!!ui.dark} label={ui.dark ? "On" : "Off"} onClick={() => setUi({ ...ui, dark: !ui.dark })} /></div>
@@ -1301,10 +1315,15 @@ export default function App() {
     : sheet.kind === "partner" ? { title: "15-minute check-in", sub: "Appreciations first. One issue, max.", secs: 900, doneLabel: "We did it", onDone: () => { if (!rec.c.partner) toggle("partner", XP.partner); } }
     : { title: "Special time", sub: "One kid, their choice, no phone, no teaching.", secs: 600, doneLabel: "Done", onDone: () => {} };
 
+  if (inspire) {
+    const t = isoDay(new Date());
+    return <InspirePage opening={inspire === "open"} dateLabel={`${DAY_LONG[new Date().getDay()]} ${shortDate(new Date())}`} onDone={() => { if (inspire === "open") { setNav("home"); setPage(null); } if (ui.inspireSeen !== t) setUi({ ...ui, inspireSeen: t }); setInspire(null); window.scrollTo(0, 0); }} />;
+  }
   const screens: Record<string, any> = { home: homeScreen, today: todayScreen, homelife: homeLifeScreen, body: bodyScreen, mind: mindScreen, talk: talkScreen };
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg)", color: "var(--text)" }}>
-      <main key={nav + (page || "") + (moveDetail || "")} className="fadein" style={{ maxWidth: 760, margin: "0 auto", padding: `0 16px calc(${NAV_BOTTOM} + ${NAV_H + 28}px)`, display: "grid", gridTemplateColumns: "minmax(0,1fr)", gap: 12 }}>
+      <Backdrop id={ui.bg} dark={!!ui.dark} />
+      <main key={nav + (page || "") + (moveDetail || "")} className="fadein" style={{ position: "relative", zIndex: 1, maxWidth: 760, margin: "0 auto", padding: `0 16px calc(${NAV_BOTTOM} + ${NAV_H + 28}px)`, display: "grid", gridTemplateColumns: "minmax(0,1fr)", gap: 12 }}>
         {page ? moreScreen : screens[nav]}
       </main>
       {toasts.length > 0 && <Toast key={toasts.length + toasts[0].title} t={toasts[0]} onClose={() => setToasts((q) => q.slice(1))} />}
