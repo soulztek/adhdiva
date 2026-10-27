@@ -70,10 +70,11 @@ async function main() {
   let fails = 0;
   for (const d of want) {
     const k = iso(d); if (k < nyToday) continue; // past days come from the feed
-    if (fails >= 2) break;
-    await sleep(1200);
-    const html = await get(`${BASE}/bible/readings/${code(d)}.cfm`);
-    const day = html && parseDay(html);
+    if (fails >= 3) break;
+    await sleep(3000);
+    const url = `${BASE}/bible/readings/${code(d)}.cfm`;
+    let html = await get(url); let day = html && parseDay(html);
+    if (!day) { await sleep(20000); html = await get(url); day = html && parseDay(html); } // bot check: back off once
     if (!day) { fails++; continue; }
     days[k] = { ...(days[k] || {}), ...day, readings: day.readings.length ? day.readings : (days[k] || {}).readings || [] };
   }
