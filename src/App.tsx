@@ -8,6 +8,8 @@ import { streakInfo, isoDay, plusDays, weekKey, levelOf, LEVELS, XP, CAP, rollRe
 import { Store, Ui, DayRec, Chore, Reminder, STORE_KEY, UI_KEY, DEFAULT_UI, DEFAULT_CHORES, DEFAULT_REMINDERS, DEFAULT_AGREEMENTS, REM_MIN, TODAY_ITEMS, MINABLE, CONNECT_MOMENTS, LANDING_STEPS, LANDING_SCRIPT, FEELINGS, NEEDS, HELP_SCRIPTS, BOUNDARY_SCRIPTS, AGENDA, EXERCISES, SNACK_MOVES, GENTLE_MOVES, WORKOUTS, FULL, MINV, DAY_SHORT, DAY_LONG, WEEK_ORDER, FALLBACK_TINY, GROUNDING, SENSORY_RESETS, SELF_COMPASSION, KIND_PROMPTS, WHY_SOURCES } from "./data";
 import { InspirePage, InspireCard, Backdrop, INSPIRE, BG_DEFAULT } from "./Inspire";
 import { loadReadings, usccbUrl, audioUrl, mainRefs, shortLabel, VIDEO_INDEX, READ_KEY } from "./readings";
+import { useCloud } from "./sync/cloud";
+import { AccountCard, HouseholdCard } from "./sync/AccountCard";
 import { Ring, ModeSwitch, PillButton, TapItem, CapNote, NextChip, SessionTimer, TimerSheet, Toast, Rating, TrendChart, Breather, ModeChip, DayPicker, fieldStyle, hm, fmtHour } from "./ui";
 
 // ---------- storage ----------
@@ -210,6 +212,8 @@ export default function App() {
   const [askTo, setAskTo] = useState<string>("Partner");
   const [b, setB] = useState<{ feel: string[]; about: string; need: string; ask: string; appreciate: string }>({ feel: ["overwhelmed"], about: "", need: "", ask: "", appreciate: "" });
   const [draft, setDraft] = useState<string | null>(null);
+  // Optional cloud sync (Settings › Account). Local-first: works without signing in.
+  const cloud = useCloud("adhdiva", store, ui, (s, u) => { setStore(s); setUi(u); }, normalize, normUi);
   const [inspire, setInspire] = useState<"open" | "view" | null>(() => (loadUi().inspireSeen === isoDay(new Date()) ? null : "open"));
   const [rdData, setRdData] = useState<any>(null);
   const [rdOff, setRdOff] = useState<number>(0);
@@ -1176,7 +1180,7 @@ export default function App() {
   const timeField = (label: string, k: string) => <label style={{ display: "grid", gap: 6 }}>{fieldLabel(label)}<input type="time" value={ui[k]} onChange={(e) => setUi({ ...ui, [k]: e.target.value || ui[k] })} style={fieldStyle} /></label>;
   const moreMenu = (
     <div style={{ display: "grid", gap: 10 }}>
-      <MenuRow icon="settings" title="Settings" sub="Names, partner, kids, home time, cycle, dark mode" onClick={() => setPage("settings")} />
+      <MenuRow icon="settings" title="Settings" sub={cloud.session ? `${cloud.email} · household, names, kids, cycle` : "Sign in to sync, household, names, kids, cycle"} onClick={() => setPage("settings")} />
       <MenuRow icon="spark" title="Daily inspiration" sub="Holy Mary, Psalm 111:1, Our Lady" onClick={() => setInspire("view")} />
       <MenuRow icon="book" title="Daily Readings" sub="Today's Mass readings from the USCCB" onClick={() => openReadings("more")} />
       <MenuRow icon="award" title="Badge shelf" sub={`${owned.size} of ${BADGES.length} badges · ${advs.length} adventures`} onClick={() => setPage("badges")} />
@@ -1184,11 +1188,13 @@ export default function App() {
       <MenuRow icon="bulb" title="Why it works" sub="The research, in plain language" onClick={() => setPage("why")} />
       <MenuRow icon="info" title="Credits" sub="Exercise images and icons" onClick={() => setPage("credits")} />
       {crisisCard}
-      <div style={{ fontSize: 12, color: "var(--text3)", textAlign: "center", padding: 8 }}>ADHDiva · everything stays on this phone · no accounts, no tracking</div>
+      <div style={{ fontSize: 12, color: "var(--text3)", textAlign: "center", padding: 8 }}>{cloud.session ? "ADHDiva · synced to your account · no tracking" : "ADHDiva · everything stays on this phone · no tracking"}</div>
     </div>
   );
   const settingsView = (
     <Fragment>
+      <AccountCard cloud={cloud} appName="ADHDiva" partnerApp="ADHDad" />
+      <HouseholdCard cloud={cloud} partnerApp="ADHDad" />
       <Section heading="You">
         <label style={{ display: "grid", gap: 6 }}>{fieldLabel('Shown on Home as "Hi, ..."')}<input value={ui.name || ""} placeholder="Mom" onChange={(e) => setUi({ ...ui, name: e.target.value })} style={fieldStyle} /></label>
         <label style={{ display: "grid", gap: 6 }}>{fieldLabel("Partner's name (used in scripts)")}<input value={ui.partner || ""} placeholder="Partner" onChange={(e) => setUi({ ...ui, partner: e.target.value })} style={fieldStyle} /></label>
@@ -1290,7 +1296,7 @@ export default function App() {
         <div style={{ fontSize: 13, lineHeight: "19px", color: "var(--text3)" }}>{FEDB_USED.join(" · ")}</div>
       </Section>
       <Section heading="Icons and design">{para("Line icons are inline SVGs adapted from Lucide (ISC license). Sister app to ADHDad.")}</Section>
-      <Section heading="Privacy">{para("No backend, no analytics, no tracking. Your data, including any cycle notes, is stored in this browser's localStorage on this phone only.")}</Section>
+      <Section heading="Privacy">{para("No analytics, no tracking. Your data is stored on this phone. If you sign in (optional), it is also saved to your own Supabase account; mood, overwhelm, check-ins, cycle tracking and notes are visible only to you. Only the home cards, kids' names and the couple check-in are shared with a household you join.")}</Section>
     </Fragment>
   );
   const moreScreen = page ? (
@@ -1300,7 +1306,7 @@ export default function App() {
       {page === "readings" && readingsView}
       {page === "settings" && settingsView}
       {page === "badges" && badgesView}
-      {page === "backup" && <Section heading="Backup" caption="Everything lives on this phone only (no account, no server). Export now and then; import to restore or move to a new phone."><BackupBox store={store} ui={ui} onImport={(s, u) => { setStore(s); if (u) setUi(normUi(u)); }} /></Section>}
+      {page === "backup" && <Section heading="Backup" caption={cloud.session ? "Your data also syncs to your account. A backup file is still a good safety net." : "Everything lives on this phone only unless you sign in to sync (Settings). Export now and then; import to restore or move to a new phone."}><BackupBox store={store} ui={ui} onImport={(s, u) => { setStore(s); if (u) setUi(normUi(u)); }} /></Section>}
       {page === "why" && whyView}
       {page === "credits" && creditsView}
     </Fragment>
